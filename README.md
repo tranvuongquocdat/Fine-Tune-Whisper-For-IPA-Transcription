@@ -23,14 +23,9 @@ Hệ thống luyện tập phát âm sử dụng Whisper IPA, SpeechT5 và Gemin
    GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
-3. Khởi động API:
+3. Khởi động giao diện Gradio:
    ```
-   uvicorn api:app --reload
-   ```
-
-4. Khởi động giao diện Gradio:
-   ```
-   python app.py
+   python start.py
    ```
 
 ## Cấu trúc dự án
