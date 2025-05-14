@@ -37,8 +37,8 @@ def get_reference_audio_and_ipa(text):
     if not reference_audio_path or not os.path.exists(reference_audio_path):
         return None, None, 0
         
-    # Get reference IPA
-    reference_ipa = speech_to_ipa(reference_audio_path)
+    # Get reference IPA directly from text instead of audio
+    reference_ipa = text_to_ipa(text)
     if reference_ipa.startswith("Error"):
         return reference_audio_path, None, 0
     
@@ -61,6 +61,23 @@ def text_to_speech(text):
             return None, f"Error: {result.get('error', 'Unknown error')}"
     except Exception as e:
         return None, f"Error: {str(e)}"
+
+def text_to_ipa(text):
+    """Convert text directly to IPA using the API"""
+    try:
+        response = requests.post(
+            f"{API_URL}/text-to-ipa",
+            data={"text": text}
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if "ipa_transcription" in result:
+            return result["ipa_transcription"]
+        else:
+            return f"Error: {result.get('error', 'Unknown error')}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def speech_to_ipa(audio_path):
     """Convert speech to IPA using the API"""
@@ -124,6 +141,7 @@ def process_user_audio(text, user_audio_path, reference_audio, reference_ipa):
     if not user_audio_path or not os.path.exists(user_audio_path):
         return None, "No user audio provided", 0
     
+    # Vẫn sử dụng speech_to_ipa cho audio của người dùng
     user_ipa = speech_to_ipa(user_audio_path)
     if user_ipa.startswith("Error"):
         return None, user_ipa, 0

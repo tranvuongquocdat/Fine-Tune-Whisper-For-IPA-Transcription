@@ -12,6 +12,7 @@ from transformers import (
     SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 )
 from datasets import load_dataset
+from pygoruut.pygoruut import Pygoruut
 
 app = FastAPI(title="Pronunciation Practice API")
 
@@ -38,6 +39,10 @@ speech_processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
 speech_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
 speech_vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
 
+# Initialize Pygoruut for text-to-IPA conversion
+print("Initializing Pygoruut...")
+pygoruut = Pygoruut()
+
 # Load speaker embeddings from dataset (only once)
 print("Loading speaker embeddings...")
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
@@ -52,6 +57,12 @@ class TextToSpeechResponse(BaseModel):
 
 class TranscriptionResponse(BaseModel):
     ipa_transcription: str
+
+class TextToIPARequest(BaseModel):
+    text: str
+
+class IPAToTextRequest(BaseModel):
+    ipa: str
 
 @app.get("/")
 async def root():
@@ -117,6 +128,38 @@ async def speech_to_ipa(audio_file: UploadFile = File(...)):
         )[0]
         
         return {"ipa_transcription": transcription}
+    
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/text-to-ipa", response_model=TranscriptionResponse)
+async def text_to_ipa(text: str = Form(...)):
+    """
+    Convert English text to IPA transcription using Pygoruut
+    
+    Returns the IPA transcription of the provided text
+    """
+    try:
+        # Convert text to IPA
+        ipa_transcription = str(pygoruut.phonemize(language="English", sentence=text))
+        
+        return {"ipa_transcription": ipa_transcription}
+    
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/ipa-to-text", response_model=TextToSpeechRequest)
+async def ipa_to_text(ipa: str = Form(...)):
+    """
+    Convert IPA transcription back to English text using Pygoruut
+    
+    Returns the English text from the provided IPA
+    """
+    try:
+        # Convert IPA to text
+        text = str(pygoruut.phonemize(language="English", sentence=ipa, is_reverse=True))
+        
+        return {"text": text}
     
     except Exception as e:
         return {"error": str(e)}
